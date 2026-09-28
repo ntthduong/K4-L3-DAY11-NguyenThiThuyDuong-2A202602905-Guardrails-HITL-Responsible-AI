@@ -62,14 +62,17 @@ class OpenAIRunner:
             return block_msg
 
         client = self._client()
-        completion = client.chat.completions.create(
+        request = dict(
             model=self.model,
             messages=[
                 {"role": "system", "content": agent.instruction},
                 {"role": "user", "content": user_message},
             ],
-            temperature=self.temperature,
         )
+        # Newer reasoning models only accept their default temperature.
+        if not self.model.lower().startswith("gpt-5"):
+            request["temperature"] = self.temperature
+        completion = client.chat.completions.create(**request)
         text = (completion.choices[0].message.content or "").strip()
 
         for hook in self.output_hooks:
